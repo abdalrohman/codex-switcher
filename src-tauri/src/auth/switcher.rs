@@ -167,10 +167,23 @@ pub fn has_active_login() -> Result<bool> {
 // OpenCode auth.json support
 // ============================================================================
 
-/// Get the path to OpenCode's auth.json file (~/.local/share/opencode/auth.json)
+/// Get the path to OpenCode's auth.json file
 fn get_opencode_auth_file() -> Result<PathBuf> {
-    let data_dir = dirs::data_dir().context("Could not find XDG data directory")?;
-    Ok(data_dir.join("opencode").join("auth.json"))
+    #[cfg(target_os = "macos")]
+    {
+        // OpenCode hardcodes ~/.local/share on macOS, ignoring standard XDG maps
+        // See: https://github.com/anomalyco/opencode/issues/5238
+        let home = dirs::home_dir().context("Could not find home directory")?;
+        Ok(home.join(".local").join("share").join("opencode").join("auth.json"))
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        // On Windows: %APPDATA%\opencode\auth.json
+        // On Linux: $XDG_DATA_HOME/opencode/auth.json (or ~/.local/share/...)
+        let data_dir = dirs::data_dir().context("Could not find data directory")?;
+        Ok(data_dir.join("opencode").join("auth.json"))
+    }
 }
 
 /// Switch account in OpenCode's auth.json.
