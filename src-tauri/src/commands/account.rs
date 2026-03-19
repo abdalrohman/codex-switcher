@@ -124,6 +124,11 @@ pub async fn switch_account(account_id: String) -> Result<(), String> {
     // Write to ~/.codex/auth.json
     switch_to_account(account).map_err(|e| e.to_string())?;
 
+    // Also write to ~/.local/share/opencode/auth.json (merge, not overwrite)
+    if let Err(e) = crate::auth::switch_to_opencode(account) {
+        eprintln!("Warning: Failed to update OpenCode auth.json: {e}");
+    }
+
     // Update the active account in our store
     set_active_account(&account_id).map_err(|e| e.to_string())?;
 
