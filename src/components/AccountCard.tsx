@@ -224,7 +224,7 @@ export function AccountCard({
     "flex h-9 w-9 items-center justify-center rounded-lg text-sm transition-colors";
   const containerClass = embedded
     ? "relative"
-    : `relative overflow-hidden rounded-[22px] border px-4 py-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.05),0_12px_24px_rgba(15,23,42,0.05)] ring-1 ring-white/70 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_1px_2px_rgba(15,23,42,0.06),0_18px_30px_rgba(15,23,42,0.08)] dark:ring-slate-900/60 dark:shadow-[0_1px_2px_rgba(2,6,23,0.45),0_16px_26px_rgba(2,6,23,0.35)] dark:hover:shadow-[0_1px_2px_rgba(2,6,23,0.5),0_20px_34px_rgba(2,6,23,0.45)] ${
+    : `relative isolate overflow-hidden rounded-[22px] border px-4 py-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.05),0_12px_24px_rgba(15,23,42,0.05)] ring-1 ring-white/70 transform-gpu [contain:paint] transition-[transform,box-shadow,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:shadow-[0_1px_2px_rgba(15,23,42,0.06),0_18px_30px_rgba(15,23,42,0.08)] dark:ring-slate-900/60 dark:shadow-[0_1px_2px_rgba(2,6,23,0.45),0_16px_26px_rgba(2,6,23,0.35)] dark:hover:shadow-[0_1px_2px_rgba(2,6,23,0.5),0_20px_34px_rgba(2,6,23,0.45)] ${
         account.is_active
           ? "border-emerald-400 bg-white dark:border-emerald-700 dark:bg-slate-900"
           : `bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(15,23,42,0.9))] ${reserveState.borderClass}`
