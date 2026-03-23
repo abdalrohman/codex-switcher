@@ -169,17 +169,20 @@ pub fn has_active_login() -> Result<bool> {
 
 /// Get the path to OpenCode's auth.json file
 fn get_opencode_auth_file() -> Result<PathBuf> {
-    #[cfg(target_os = "macos")]
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
     {
-        // OpenCode hardcodes ~/.local/share on macOS, ignoring standard XDG maps
+        // OpenCode uses ~/.local/share on macOS and Windows.
         // See: https://github.com/anomalyco/opencode/issues/5238
         let home = dirs::home_dir().context("Could not find home directory")?;
-        Ok(home.join(".local").join("share").join("opencode").join("auth.json"))
+        Ok(home
+            .join(".local")
+            .join("share")
+            .join("opencode")
+            .join("auth.json"))
     }
 
-    #[cfg(not(target_os = "macos"))]
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
     {
-        // On Windows: %APPDATA%\opencode\auth.json
         // On Linux: $XDG_DATA_HOME/opencode/auth.json (or ~/.local/share/...)
         let data_dir = dirs::data_dir().context("Could not find data directory")?;
         Ok(data_dir.join("opencode").join("auth.json"))
@@ -196,8 +199,9 @@ pub fn switch_to_opencode(account: &StoredAccount) -> Result<()> {
 
     // 1. Read existing file into a generic JSON map to preserve other keys
     let mut auth_map: serde_json::Map<String, serde_json::Value> = if auth_path.exists() {
-        let content = fs::read_to_string(&auth_path)
-            .with_context(|| format!("Failed to read OpenCode auth.json: {}", auth_path.display()))?;
+        let content = fs::read_to_string(&auth_path).with_context(|| {
+            format!("Failed to read OpenCode auth.json: {}", auth_path.display())
+        })?;
         serde_json::from_str(&content).unwrap_or_default()
     } else {
         serde_json::Map::new()
@@ -232,15 +236,20 @@ pub fn switch_to_opencode(account: &StoredAccount) -> Result<()> {
 
     // 4. Write back the full merged content
     if let Some(parent) = auth_path.parent() {
-        fs::create_dir_all(parent)
-            .with_context(|| format!("Failed to create OpenCode config dir: {}", parent.display()))?;
+        fs::create_dir_all(parent).with_context(|| {
+            format!("Failed to create OpenCode config dir: {}", parent.display())
+        })?;
     }
 
     let content = serde_json::to_string_pretty(&auth_map)
         .context("Failed to serialize OpenCode auth.json")?;
 
-    fs::write(&auth_path, &content)
-        .with_context(|| format!("Failed to write OpenCode auth.json: {}", auth_path.display()))?;
+    fs::write(&auth_path, &content).with_context(|| {
+        format!(
+            "Failed to write OpenCode auth.json: {}",
+            auth_path.display()
+        )
+    })?;
 
     #[cfg(unix)]
     {
