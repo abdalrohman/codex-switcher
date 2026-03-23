@@ -13,4 +13,8 @@ if ! command -v cargo >/dev/null 2>&1; then
   exit 1
 fi
 
+if [ "${1:-}" = "build" ] && [ -z "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
+  set -- "$@" --config '{"bundle":{"createUpdaterArtifacts":false}}'
+fi
+
 exec tauri "$@"
