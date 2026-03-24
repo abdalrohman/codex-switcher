@@ -753,3 +753,18 @@ pub async fn set_opencode_sync_enabled(enabled: bool) -> Result<(), String> {
     settings.opencode_sync_enabled = enabled;
     crate::auth::save_settings(&settings).map_err(|e| e.to_string())
 }
+
+/// Get whether experimental reserve auto-rotation is enabled
+#[tauri::command]
+pub async fn get_experimental_auto_rotate_enabled() -> Result<bool, String> {
+    let settings = crate::auth::load_settings().map_err(|e| e.to_string())?;
+    Ok(settings.experimental_auto_rotate_enabled)
+}
+
+/// Set whether experimental reserve auto-rotation is enabled
+#[tauri::command]
+pub async fn set_experimental_auto_rotate_enabled(enabled: bool) -> Result<(), String> {
+    let mut settings = crate::auth::load_settings().unwrap_or_default();
+    settings.experimental_auto_rotate_enabled = enabled;
+    crate::auth::save_settings(&settings).map_err(|e| e.to_string())
+}

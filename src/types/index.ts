@@ -61,3 +61,16 @@ export interface SwitchResult {
   opencode_synced: boolean;
   openclaw_synced: boolean;
 }
+
+export interface AutoRotateResult {
+  enabled: boolean;
+  triggered: boolean;
+  rotated: boolean;
+  reason: string;
+  from_account_id: string | null;
+  from_account_name: string | null;
+  to_account_id: string | null;
+  to_account_name: string | null;
+  opencode_synced: boolean;
+  openclaw_synced: boolean;
+}

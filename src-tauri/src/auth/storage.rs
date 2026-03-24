@@ -17,6 +17,9 @@ pub struct AppSettings {
     /// Whether to sync credentials to companion CLI auth files on switch
     #[serde(default = "default_true")]
     pub opencode_sync_enabled: bool,
+    /// Whether the experimental reserve account auto-rotation is enabled
+    #[serde(default)]
+    pub experimental_auto_rotate_enabled: bool,
 }
 
 fn default_true() -> bool {
@@ -27,6 +30,7 @@ impl Default for AppSettings {
     fn default() -> Self {
         Self {
             opencode_sync_enabled: true,
+            experimental_auto_rotate_enabled: false,
         }
     }
 }

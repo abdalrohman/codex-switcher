@@ -39,6 +39,9 @@ function App() {
     saveMaskedAccountIds,
     loadOpencodeSyncEnabled,
     saveOpencodeSyncEnabled,
+    loadExperimentalAutoRotateEnabled,
+    saveExperimentalAutoRotateEnabled,
+    evaluateAutoRotate,
   } = useAccounts();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -72,12 +75,14 @@ function App() {
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
 
   const [opencodeSyncEnabled, setOpencodeSyncEnabled] = useState(true);
+  const [experimentalAutoRotateEnabled, setExperimentalAutoRotateEnabled] = useState(false);
   const [switchSuccessToast, setSwitchSuccessToast] = useState<{
     message: string;
     show: boolean;
   }>({ message: "", show: false });
   const [themePreference, setThemePreference] = useState<ThemePreference>("system");
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
+  const autoRotateCheckInFlight = useRef(false);
 
   const toggleMask = (accountId: string) => {
     setMaskedAccounts((prev) => {
@@ -130,7 +135,10 @@ function App() {
     loadOpencodeSyncEnabled().then((enabled) => {
       setOpencodeSyncEnabled(enabled);
     });
-  }, [loadMaskedAccountIds, loadOpencodeSyncEnabled]);
+    loadExperimentalAutoRotateEnabled().then((enabled) => {
+      setExperimentalAutoRotateEnabled(enabled);
+    });
+  }, [loadExperimentalAutoRotateEnabled, loadMaskedAccountIds, loadOpencodeSyncEnabled]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -177,6 +185,52 @@ function App() {
     setOpencodeSyncEnabled(next);
     await saveOpencodeSyncEnabled(next);
   };
+
+  const toggleExperimentalAutoRotate = async () => {
+    const next = !experimentalAutoRotateEnabled;
+    setExperimentalAutoRotateEnabled(next);
+    await saveExperimentalAutoRotateEnabled(next);
+  };
+
+  const maybeEvaluateAutoRotate = useCallback(async () => {
+    if (!experimentalAutoRotateEnabled) return;
+    if (autoRotateCheckInFlight.current) return;
+    if (switchingId) return;
+    if (processInfo && !processInfo.can_switch) return;
+
+    autoRotateCheckInFlight.current = true;
+    try {
+      const result = await evaluateAutoRotate();
+      if (!result.rotated || !result.to_account_name) return;
+
+      const syncedTargets = [
+        result.opencode_synced ? "OpenCode" : null,
+        result.openclaw_synced ? "OpenClaw" : null,
+      ].filter(Boolean);
+
+      const syncSuffix =
+        syncedTargets.length > 0 ? ` and synced ${syncedTargets.join(" + ")}` : "";
+      const fromName = result.from_account_name ?? "active account";
+      const message = `Experimental auto-rotate switched from ${fromName} to ${result.to_account_name}${syncSuffix}`;
+      setSwitchSuccessToast({ message, show: true });
+      setTimeout(() => setSwitchSuccessToast({ message: "", show: false }), 5000);
+    } catch (err) {
+      console.error("Failed to evaluate experimental auto-rotate:", err);
+    } finally {
+      autoRotateCheckInFlight.current = false;
+    }
+  }, [evaluateAutoRotate, experimentalAutoRotateEnabled, processInfo, switchingId]);
+
+  useEffect(() => {
+    if (!experimentalAutoRotateEnabled) return;
+
+    void maybeEvaluateAutoRotate();
+    const interval = setInterval(() => {
+      void maybeEvaluateAutoRotate();
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [experimentalAutoRotateEnabled, maybeEvaluateAutoRotate]);
 
   useEffect(() => {
     if (!isActionsMenuOpen) return;
@@ -241,6 +295,7 @@ function App() {
     setRefreshSuccess(false);
     try {
       await refreshUsage();
+      await maybeEvaluateAutoRotate();
       setRefreshSuccess(true);
       setTimeout(() => setRefreshSuccess(false), 2000);
     } finally {
@@ -662,6 +717,27 @@ function App() {
                           className="hidden"
                           checked={opencodeSyncEnabled}
                           onChange={toggleOpencodeSync}
+                        />
+                      </label>
+
+                      <label className="flex w-full cursor-pointer items-start justify-between gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors hover:bg-slate-100 dark:hover:bg-slate-800">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-slate-700 dark:text-slate-100">Auto-rotate to best reserve</span>
+                            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">Experimental</span>
+                          </div>
+                          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                            Automatically switches away from an exhausted active account when a better reserve is available.
+                          </p>
+                        </div>
+                        <div className={`relative mt-0.5 h-5 w-9 shrink-0 rounded-full transition-colors ${experimentalAutoRotateEnabled ? "bg-amber-500" : "bg-slate-300"}`}>
+                          <div className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform ${experimentalAutoRotateEnabled ? "translate-x-4" : "translate-x-0"}`}></div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          className="hidden"
+                          checked={experimentalAutoRotateEnabled}
+                          onChange={toggleExperimentalAutoRotate}
                         />
                       </label>
 

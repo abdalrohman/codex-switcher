@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type {
   AccountInfo,
+  AutoRotateResult,
   UsageInfo,
   AccountWithUsage,
   WarmupSummary,
@@ -362,6 +363,35 @@ export function useAccounts() {
     }
   }, []);
 
+  const loadExperimentalAutoRotateEnabled = useCallback(async () => {
+    try {
+      return await invoke<boolean>("get_experimental_auto_rotate_enabled");
+    } catch (err) {
+      console.error("Failed to load experimental auto-rotate setting:", err);
+      return false;
+    }
+  }, []);
+
+  const saveExperimentalAutoRotateEnabled = useCallback(async (enabled: boolean) => {
+    try {
+      await invoke("set_experimental_auto_rotate_enabled", { enabled });
+    } catch (err) {
+      console.error("Failed to save experimental auto-rotate setting:", err);
+    }
+  }, []);
+
+  const evaluateAutoRotate = useCallback(async (): Promise<AutoRotateResult> => {
+    try {
+      const result = await invoke<AutoRotateResult>("evaluate_auto_rotate");
+      if (result.rotated) {
+        await loadAccounts(true);
+      }
+      return result;
+    } catch (err) {
+      throw err;
+    }
+  }, [loadAccounts]);
+
   useEffect(() => {
     loadAccounts().then((accountList) => refreshUsage(accountList));
     
@@ -397,5 +427,8 @@ export function useAccounts() {
     saveMaskedAccountIds,
     loadOpencodeSyncEnabled,
     saveOpencodeSyncEnabled,
+    loadExperimentalAutoRotateEnabled,
+    saveExperimentalAutoRotateEnabled,
+    evaluateAutoRotate,
   };
 }
