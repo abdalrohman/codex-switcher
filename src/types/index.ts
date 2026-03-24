@@ -59,4 +59,5 @@ export interface ImportAccountsSummary {
 
 export interface SwitchResult {
   opencode_synced: boolean;
+  openclaw_synced: boolean;
 }

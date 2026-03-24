@@ -14,7 +14,7 @@ use crate::types::{AccountsStore, AuthData, StoredAccount};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppSettings {
-    /// Whether to sync credentials to OpenCode's auth.json on switch
+    /// Whether to sync credentials to companion CLI auth files on switch
     #[serde(default = "default_true")]
     pub opencode_sync_enabled: bool,
 }
@@ -54,8 +54,7 @@ pub fn save_settings(settings: &AppSettings) -> Result<()> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
-    let content = serde_json::to_string_pretty(settings)
-        .context("Failed to serialize settings")?;
+    let content = serde_json::to_string_pretty(settings).context("Failed to serialize settings")?;
     fs::write(&path, content)
         .with_context(|| format!("Failed to write settings file: {}", path.display()))?;
     Ok(())

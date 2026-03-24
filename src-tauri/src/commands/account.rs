@@ -114,6 +114,8 @@ pub async fn add_account_from_file(path: String, name: String) -> Result<Account
 pub struct SwitchResult {
     /// Whether OpenCode auth.json was also updated
     pub opencode_synced: bool,
+    /// Whether OpenClaw auth-profiles.json was also updated
+    pub openclaw_synced: bool,
 }
 
 /// Switch to a different account
@@ -131,18 +133,28 @@ pub async fn switch_account(account_id: String) -> Result<SwitchResult, String> 
     // Write to ~/.codex/auth.json
     switch_to_account(account).map_err(|e| e.to_string())?;
 
-    // Conditionally sync to OpenCode's auth.json (merge, not overwrite)
+    // Conditionally sync to companion CLI auth files
     let settings = crate::auth::load_settings().unwrap_or_default();
-    let opencode_synced = if settings.opencode_sync_enabled {
-        match crate::auth::switch_to_opencode(account) {
+    let (opencode_synced, openclaw_synced) = if settings.opencode_sync_enabled {
+        let opencode_synced = match crate::auth::switch_to_opencode(account) {
             Ok(()) => true,
             Err(e) => {
                 eprintln!("Warning: Failed to update OpenCode auth.json: {e}");
                 false
             }
-        }
+        };
+
+        let openclaw_synced = match crate::auth::switch_to_openclaw(account) {
+            Ok(()) => true,
+            Err(e) => {
+                eprintln!("Warning: Failed to update OpenClaw auth-profiles.json: {e}");
+                false
+            }
+        };
+
+        (opencode_synced, openclaw_synced)
     } else {
-        false
+        (false, false)
     };
 
     // Update the active account in our store
@@ -171,7 +183,10 @@ pub async fn switch_account(account_id: String) -> Result<SwitchResult, String> 
         }
     }
 
-    Ok(SwitchResult { opencode_synced })
+    Ok(SwitchResult {
+        opencode_synced,
+        openclaw_synced,
+    })
 }
 
 /// Remove an account

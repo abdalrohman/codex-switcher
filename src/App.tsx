@@ -203,8 +203,13 @@ function App() {
       setSwitchingId(accountId);
       const result = await switchAccount(accountId);
 
-      const message = result.opencode_synced
-        ? "✓ Synced to Codex CLI + OpenCode"
+      const syncedTargets = [
+        result.opencode_synced ? "OpenCode" : null,
+        result.openclaw_synced ? "OpenClaw" : null,
+      ].filter(Boolean);
+
+      const message = syncedTargets.length > 0
+        ? `✓ Synced to Codex CLI + ${syncedTargets.join(" + ")}`
         : "✓ Synced to Codex CLI";
 
       setSwitchSuccessToast({ message, show: true });
@@ -648,7 +653,7 @@ function App() {
                       </div>
 
                       <label className="flex w-full cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-sm transition-colors hover:bg-slate-100 dark:hover:bg-slate-800">
-                        <span className="font-medium text-slate-700 dark:text-slate-100">Sync to OpenCode</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-100">Sync to OpenCode + OpenClaw</span>
                         <div className={`relative h-5 w-9 rounded-full transition-colors ${opencodeSyncEnabled ? "bg-emerald-500" : "bg-slate-300"}`}>
                           <div className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform ${opencodeSyncEnabled ? "translate-x-4" : "translate-x-0"}`}></div>
                         </div>
